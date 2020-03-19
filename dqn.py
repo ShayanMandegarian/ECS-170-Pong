@@ -47,7 +47,7 @@ class QLearner(nn.Module):
     def act(self, state, epsilon):
         if random.random() > epsilon:
             state = Variable(torch.FloatTensor(np.float32(state)).unsqueeze(0), requires_grad=True)
-            qval = self.forward(state)    
+            qval = self.forward(state)
             action = torch.argmax(qval) 
         else:
             action = random.randrange(self.env.action_space.n)
@@ -60,19 +60,19 @@ class QLearner(nn.Module):
 def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     state, action, reward, next_state, done = replay_buffer.sample(batch_size)
 
-    state = Variable(torch.FloatTensor(np.float32(state)))
-    next_state = Variable(torch.FloatTensor(np.float32(next_state)), requires_grad=True)
+    #state = Variable(torch.FloatTensor(np.float32(state)))
+    #next_state = Variable(torch.FloatTensor(np.float32(next_state)), requires_grad=True)
     action = Variable(torch.LongTensor(action))
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
-    qvals = model(state)
-    nextqvals = model(next_state)
+    qvals = model(state.squeeze(1))
+    nextqvals = model(next_state.squeeze(1))
     qval = torch.gather(qvals,1,action.unsqueeze(1))
     nextqval = nextqvals.max(1)[0]
     
-    qvalue = reward + gamma*nextqval * (1-done)
+    qvalue = (reward + gamma*nextqval) * (1-done)
 
-    loss = (qval - Variable(qvalue.data)).pow(2).mean()
+    loss = (qval - qvalue).pow(2).mean()
     return loss
 
 class ReplayBuffer(object):
@@ -88,7 +88,7 @@ class ReplayBuffer(object):
     def sample(self, batch_size):
         samp = random.sample(self.buffer, batch_size)
         state, action, reward, next_state, done = zip(*samp)
-        return np.concatenate(state), action, reward, np.concatenate(next_state), done
+        return Variable(torch.FloatTensor(np.float32(state))), action, reward, Variable(torch.FloatTensor(np.float32(next_state))), done
 
     def __len__(self):
         return len(self.buffer)

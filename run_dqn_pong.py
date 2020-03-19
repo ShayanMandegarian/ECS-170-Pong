@@ -17,15 +17,16 @@ env = make_atari(env_id)
 env = wrap_deepmind(env)
 env = wrap_pytorch(env)
 
-num_frames = 1000000
+num_frames = 40000
 batch_size = 32
-gamma = 0.99
+gamma = 0.9
 record_idx = 10000
 
+filename = "2model.pth"
 replay_initial = 10000
 replay_buffer = ReplayBuffer(100000)
 model = QLearner(env, num_frames, batch_size, gamma, replay_buffer)
-model.load_state_dict(torch.load("model_pretrained.pth", map_location='cpu'))
+model.load_state_dict(torch.load(filename, map_location='cpu'))
 
 target_model = QLearner(env, num_frames, batch_size, gamma, replay_buffer)
 target_model.copy_from(model)
@@ -62,6 +63,10 @@ for frame_idx in range(1, num_frames + 1):
     if done:
         state = env.reset()
         all_rewards.append((frame_idx, episode_reward))
+        fig = plt.figure()
+        plt.plot(all_rewards)
+        plt.show()
+        fig.savefig('rewards.png')
         episode_reward = 0
 
     if len(replay_buffer) > replay_initial:
@@ -78,8 +83,12 @@ for frame_idx in range(1, num_frames + 1):
         print('#Frame: %d, Loss: %f' % (frame_idx, np.mean(losses, 0)[1]))
         print('Last-10 average reward: %f' % np.mean(all_rewards[-10:], 0)[1])
 
-    if frame_idx % 50000 == 0:
+    if frame_idx % 20000 == 0:
+        print("Copying from model...")
         target_model.copy_from(model)
-
+    
+    if frame_idx % 40000 == 0:
+        print("Saving model...")
+        torch.save(model.state_dict(), filename)
 
 
