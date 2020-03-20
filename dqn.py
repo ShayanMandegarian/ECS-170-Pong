@@ -66,7 +66,7 @@ def compute_td_loss(model, target_model, batch_size, gamma, replay_buffer):
     reward = Variable(torch.FloatTensor(reward))
     done = Variable(torch.FloatTensor(done))
     qvals = model(state.squeeze(1))
-    nextqvals = model(next_state.squeeze(1))
+    nextqvals = target_model(next_state.squeeze(1))
     qval = torch.gather(qvals,1,action.unsqueeze(1)).squeeze(1)
     nextqval = nextqvals.max(1)[0]
     
