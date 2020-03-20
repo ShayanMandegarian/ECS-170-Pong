@@ -17,9 +17,9 @@ env = make_atari(env_id)
 env = wrap_deepmind(env)
 env = wrap_pytorch(env)
 
-num_frames = 40000
+num_frames = 1000000
 batch_size = 32
-gamma = 0.9
+gamma = 0.99
 record_idx = 10000
 
 filename = "2model.pth"
@@ -45,6 +45,7 @@ epsilon_by_frame = lambda frame_idx: epsilon_final + (epsilon_start - epsilon_fi
 losses = []
 all_rewards = []
 episode_reward = 0
+currMax = -50;
 
 state = env.reset()
 
@@ -83,12 +84,17 @@ for frame_idx in range(1, num_frames + 1):
         print('#Frame: %d, Loss: %f' % (frame_idx, np.mean(losses, 0)[1]))
         print('Last-10 average reward: %f' % np.mean(all_rewards[-10:], 0)[1])
 
+        if (np.mean(all_rewards[-10:], 0)[1] > currMax):
+            print("Saving model...")
+            torch.save(model.state_dict(), filename)
+            currMax = np.mean(all_rewards[-10:], 0)[1]
+        else:
+            print("not saving")
+
+
     if frame_idx % 20000 == 0:
         print("Copying from model...")
         target_model.copy_from(model)
     
-    if frame_idx % 40000 == 0:
-        print("Saving model...")
-        torch.save(model.state_dict(), filename)
 
 
